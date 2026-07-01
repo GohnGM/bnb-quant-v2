@@ -1,0 +1,12 @@
+# 实时 K 线增量同步（阶段 B）
+# 启用：enabled: true + .env 可选填 GATE_API_KEY（公开 K 线通常无需密钥）
+symbol: BTCUSDT
+intervals:
+  - 5m
+  - 1h
+source: gate  # gate | binance
+enabled: false
+lookback_bars:
+  5m: 24
+  1h: 3
+store_dir: data/klines

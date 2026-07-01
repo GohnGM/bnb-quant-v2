@@ -1,0 +1,10 @@
+# Telegram 通知（阶段 D）
+# 真发：enabled: true + dry_run: false，并在 .env 填 TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID
+# 详见 docs/plan_live_telegram.md §8.1
+enabled: true
+dry_run: false
+parse_mode: ""
+send_on_signal: true
+send_on_error: true
+send_daily_heartbeat: true
+heartbeat_cron_utc: "0 4 * * *"   # 12:00 北京时间

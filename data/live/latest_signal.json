@@ -1,0 +1,28 @@
+{
+  "as_of": "2026-07-01T06:32:59.920252+00:00",
+  "hour_open_time": "2026-07-01T06:00:00+00:00",
+  "ready": false,
+  "skip_reason": "数据不足：hour=2026-07-01T06:00:00+00:00 当前小时 5m=0/6",
+  "any_triggered": false,
+  "signals": [],
+  "rules": [
+    "p1大阴 & f6阳>=4 & f6收盘强>=67% → 1H涨",
+    "p1大阴 & f6阳>=4 & f6涨>0.2% & f6收盘强 → 1H涨",
+    "p1大阳 & f6阴>=4 & f6收盘弱<=33% → 1H跌",
+    "p1大阳 & f6阴>=4 & f6跌>0.2% & f6收盘弱 → 1H跌"
+  ],
+  "primary_rule": "p1大阴 & f6阳>=4 & f6收盘强>=67% → 1H涨",
+  "strict_rule": "p1大阴 & f6阳>=4 & f6涨>0.2% & f6收盘强 → 1H涨",
+  "primary_short_rule": "p1大阳 & f6阴>=4 & f6收盘弱<=33% → 1H跌",
+  "strict_short_rule": "p1大阳 & f6阴>=4 & f6跌>0.2% & f6收盘弱 → 1H跌",
+  "triggered_new": [],
+  "triggered_skipped": [],
+  "notify": {
+    "signals_sent": 0,
+    "alerts_sent": 0,
+    "dry_run": false,
+    "errors": [
+      "<urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    ]
+  }
+}
