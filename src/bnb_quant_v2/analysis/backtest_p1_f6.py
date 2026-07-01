@@ -13,7 +13,7 @@
 - ``STRICT_HOUR_RULE``  — 严格规则做多，约 91.5% / 覆盖较低
 - ``PRIMARY_HOUR_SHORT_RULE`` / ``STRICT_HOUR_SHORT_RULE`` — 镜像做空，约 83% / ~31 笔·月
 
-规则定义与 ``build_p1_f6_hour_predictions`` 保持单一来源，实时 ``evaluator`` 复用同一函数。
+规则定义从 ``strategy/p1f6_rules.py`` 的规则注册表获取，回测和实时评估共用同一规则源。
 """
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ from bnb_quant_v2.analysis.intra_5m import (
     F6_RET_STRONG,
 )
 from bnb_quant_v2.analysis.prediction_1h import _eval_rule
+from bnb_quant_v2.strategy.p1f6_rules import rule_registry
 
 TargetCol = Literal["hour_up", "half2_up"]
 DEFAULT_TARGET: TargetCol = "hour_up"
@@ -140,141 +141,21 @@ def _labeled(df: pd.DataFrame, target_col: TargetCol) -> pd.DataFrame:
 
 
 def build_p1_f6_hour_predictions(df: pd.DataFrame) -> list[tuple[str, pd.Series]]:
-    """p1×f6 → 预测当前整根 1H 涨跌（+1 涨 / -1 跌 / 0 无信号）。"""
-    z = pd.Series(0, index=df.index, dtype=int)
-    rules: list[tuple[str, pd.Series]] = []
+    """p1×f6 → 预测当前整根 1H 涨跌（+1 涨 / -1 跌 / 0 无信号）。
 
-    # 默认主规则（f6 收盘强度 >= 67%）
-    p = z.copy()
-    p.loc[
-        (df["p1_candle_type"] == "大阴线")
-        & (df["f6_yang_cnt"] >= 4)
-        & (df["f6_close_strength"] >= F6_CLOSE_STRENGTH_MIN)
-    ] = 1
-    rules.append((PRIMARY_HOUR_RULE, p.copy()))
-
-    p = z.copy()
-    p.loc[(df["p1_candle_type"] == "大阴线") & (df["f6_yang_cnt"] >= 4)] = 1
-    rules.append(("p1大阴 & f6阳>=4 → 1H涨", p.copy()))
-
-    p = z.copy()
-    p.loc[df["f6_yang_cnt"] >= 4] = 1
-    p.loc[df["f6_yang_cnt"] <= 2] = -1
-    rules.append(("f6阳>=4→1H涨 / f6阳<=2→1H跌", p.copy()))
-
-    p = z.copy()
-    p.loc[df["f6_all_yang"]] = 1
-    p.loc[df["f6_all_yin"]] = -1
-    rules.append(("f6皆阳→1H涨 / f6皆阴→1H跌", p.copy()))
-
-    p = z.copy()
-    p.loc[df["p1_yin"] & (df["f6_yang_cnt"] >= 4)] = 1
-    p.loc[df["p1_yang"] & (df["f6_yang_cnt"] <= 2)] = -1
-    rules.append(("p1阴&f6阳>=4涨 / p1阳&f6阳<=2跌", p.copy()))
-
-    p = z.copy()
-    p.loc[(df["p1_candle_type"] == "大阴线") & (df["f6_ret_sum"] > 0)] = 1
-    rules.append(("p1大阴 & f6前30分累计涨 → 1H涨", p.copy()))
-
-    p = z.copy()
-    p.loc[df["p1_yin"] & df["f6_last2_yang"]] = 1
-    rules.append(("p1阴 & f6最后2根皆阳 → 1H涨", p.copy()))
-
-    p = z.copy()
-    p.loc[(df["p1_m5_pattern_last3"] == "阴阴阴") & ~df["f6_all_yin"]] = 1
-    rules.append(("p1尾盘阴阴阴 & f6非皆阴 → 1H涨", p.copy()))
-
-    # --- 加严规则（实验对比用）---
-    p = z.copy()
-    p.loc[
-        (df["p1_candle_type"] == "大阴线")
-        & (df["f6_yang_cnt"] >= 4)
-        & (df["f6_ret_sum"] > F6_RET_STRONG)
-    ] = 1
-    rules.append(("p1大阴 & f6阳>=4 & f6涨>0.2% → 1H涨", p.copy()))
-
-    p = z.copy()
-    p.loc[(df["p1_candle_type"] == "大阴线") & df["f6_yang_cnt"].isin([5, 6])] = 1
-    rules.append(("p1大阴 & f6阳5-6 → 1H涨", p.copy()))
-
-    p = z.copy()
-    p.loc[
-        (df["p1_candle_type"] == "大阴线")
-        & df["f6_yang_cnt"].isin([5, 6])
-        & (df["f6_close_strength"] >= F6_CLOSE_STRENGTH_MIN)
-    ] = 1
-    rules.append(("p1大阴 & f6阳5-6 & f6收盘强>=67% → 1H涨", p.copy()))
-
-    p = z.copy()
-    p.loc[
-        (df["p1_candle_type"] == "大阴线")
-        & (df["f6_yang_cnt"] >= 4)
-        & (df["f6_range_hl"] >= F6_RANGE_HL_MIN)
-    ] = 1
-    rules.append(("p1大阴 & f6阳>=4 & f6振幅>=0.4% → 1H涨", p.copy()))
-
-    p = z.copy()
-    p.loc[
-        (df["p1_candle_type"] == "大阴线")
-        & (df["f6_yang_cnt"] >= 4)
-        & (df["f6_ret_sum"] > F6_RET_STRONG)
-        & (df["f6_close_strength"] >= F6_CLOSE_STRENGTH_MIN)
-    ] = 1
-    rules.append((STRICT_HOUR_RULE, p.copy()))
-
-    # --- 做空规则（镜像主/严格做多）---
-    p = z.copy()
-    p.loc[
-        (df["p1_candle_type"] == "大阳线")
-        & (df["f6_yin_cnt"] >= 4)
-        & (df["f6_close_strength"] <= (1 - F6_CLOSE_STRENGTH_MIN))
-    ] = -1
-    rules.append((PRIMARY_HOUR_SHORT_RULE, p.copy()))
-
-    p = z.copy()
-    p.loc[
-        (df["p1_candle_type"] == "大阳线")
-        & (df["f6_yin_cnt"] >= 4)
-        & (df["f6_ret_sum"] < -F6_RET_STRONG)
-        & (df["f6_close_strength"] <= (1 - F6_CLOSE_STRENGTH_MIN))
-    ] = -1
-    rules.append((STRICT_HOUR_SHORT_RULE, p.copy()))
-
-    return rules
+    从规则注册表获取所有启用的规则，保持与实时评估的一致性。
+    """
+    predictions = rule_registry.evaluate_all(df)
+    return [(name, pred) for name, pred in predictions.items()]
 
 
 def build_p1_f6_half2_predictions(df: pd.DataFrame) -> list[tuple[str, pd.Series]]:
-    """p1×f6 → 预测后 30 分钟涨跌（half2_up）。"""
-    z = pd.Series(0, index=df.index, dtype=int)
-    rules: list[tuple[str, pd.Series]] = []
+    """p1×f6 → 预测后 30 分钟涨跌（half2_up）。
 
-    p = z.copy()
-    p.loc[(df["p1_candle_type"] == "大阴线") & (df["f6_yang_cnt"] >= 4)] = 1
-    rules.append(("p1大阴 & f6阳>=4 → 后半涨", p.copy()))
-
-    p = z.copy()
-    p.loc[df["f6_all_yang"]] = 1
-    p.loc[df["f6_all_yin"]] = -1
-    rules.append(("f6皆阳→后半涨 / f6皆阴→后半跌", p.copy()))
-
-    p = z.copy()
-    p.loc[df["p1_yin"] & (df["f6_yang_cnt"] >= 4)] = 1
-    p.loc[df["p1_yang"] & (df["f6_yang_cnt"] <= 2)] = -1
-    rules.append(("p1阴&f6阳>=4涨 / p1阳&f6阳<=2跌", p.copy()))
-
-    p = z.copy()
-    p.loc[(df["p1_candle_type"] == "大阴线") & (df["f6_ret_sum"] > 0)] = 1
-    rules.append(("p1大阴 & f6前30分累计涨 → 后半涨", p.copy()))
-
-    p = z.copy()
-    p.loc[df["p1_yin"] & df["f6_last2_yang"]] = 1
-    rules.append(("p1阴 & f6最后2根皆阳 → 后半涨", p.copy()))
-
-    p = z.copy()
-    p.loc[(df["p1_m5_pattern_last3"] == "阴阴阴") & ~df["f6_all_yin"]] = 1
-    rules.append(("p1尾盘阴阴阴 & f6非皆阴 → 后半涨", p.copy()))
-
-    return rules
+    从规则注册表获取 tier="half2" 的规则。
+    """
+    half2_rules = rule_registry.get_by_tier("half2")
+    return [(rule.metadata.name, rule.evaluate_batch(df)) for rule in half2_rules]
 
 
 def _prediction_builders(target_col: TargetCol):

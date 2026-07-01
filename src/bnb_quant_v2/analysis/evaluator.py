@@ -1,4 +1,4 @@
-"""实时 :30 信号评估（与回测 ``build_p1_f6_hour_predictions`` 共用规则）。
+"""实时 :30 信号评估（与回测共用规则注册表）。
 
 评估时刻
 --------
@@ -29,7 +29,6 @@ from bnb_quant_v2.analysis.backtest_p1_f6 import (
     PRIMARY_HOUR_SHORT_RULE,
     STRICT_HOUR_RULE,
     STRICT_HOUR_SHORT_RULE,
-    build_p1_f6_hour_predictions,
 )
 from bnb_quant_v2.analysis.intra_5m import (
     EXPECTED_M5_PER_HOUR,
@@ -41,6 +40,7 @@ from bnb_quant_v2.analysis.intra_5m import (
 )
 from bnb_quant_v2.analysis.prediction_1h import enrich_bar_features
 from bnb_quant_v2.data.kline_store import KlineStore
+from bnb_quant_v2.strategy.p1f6_rules import rule_registry
 
 
 @dataclass
@@ -193,8 +193,8 @@ def build_live_p1_f6_row(
 
 def _predictions_for_row(row: pd.Series) -> dict[str, int]:
     df = pd.DataFrame([row])
-    preds = {name: int(pred.iloc[0]) for name, pred in build_p1_f6_hour_predictions(df)}
-    return {name: preds[name] for name in LIVE_PUSH_RULES if name in preds}
+    preds = rule_registry.evaluate_all(df)
+    return {name: int(preds[name].iloc[0]) for name in LIVE_PUSH_RULES if name in preds}
 
 
 def _live_signal_from_row(row: pd.Series, rule: str, direction: int) -> LiveSignal:
