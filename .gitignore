@@ -10,5 +10,6 @@ build/
 data/klines/*.parquet
 data/analysis/*
 !data/analysis/.gitkeep
+data/live/*.json
 *.log
 !logs/.gitkeep
