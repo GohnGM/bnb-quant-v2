@@ -109,7 +109,13 @@
 
 ### 3.4 规则定义位置
 
-所有规则定义集中在 [backtest_p1_f6.py](src/bnb_quant_v2/analysis/backtest_p1_f6.py)，通过 `build_p1_f6_hour_predictions()` 函数实现。实时评估 [evaluator.py](src/bnb_quant_v2/analysis/evaluator.py) 复用同一函数，确保回测与实盘一致性。
+所有规则定义集中在 [p1f6_rules.py](src/bnb_quant_v2/strategy/p1f6_rules.py)，每条规则是一个独立类，通过 `@register` 装饰器注册到规则注册表。回测和实时评估都从注册表获取规则，确保规则单一来源，避免策略漂移。
+
+**规则注册表模式**:
+- 每条规则是一个独立类，实现 `evaluate()` 和 `evaluate_batch()` 方法
+- 通过 `@rule_registry.register_decorator()` 装饰器注册
+- 支持元数据：名称、层级（tier）、风险等级（risk）、描述、启用状态
+- 回测和实时评估共用同一注册表，确保一致性
 
 ---
 
