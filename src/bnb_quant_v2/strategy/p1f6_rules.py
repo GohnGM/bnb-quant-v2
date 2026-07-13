@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from bnb_quant_v2.analysis.intra_5m import (
+from bnb_quant_v2.strategy.base import BaseRule, rule_registry
+from bnb_quant_v2.strategy.constants import (
     F6_CLOSE_STRENGTH_MIN,
     F6_RANGE_HL_MIN,
     F6_RET_STRONG,
 )
-from bnb_quant_v2.strategy.base import BaseRule, rule_registry
 
 
 PRIMARY_HOUR_RULE = "p1大阴 & f6阳>=4 & f6收盘强>=67% → 1H涨"

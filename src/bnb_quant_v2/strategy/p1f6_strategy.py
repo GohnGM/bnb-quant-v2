@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Dict, List
 
 import pandas as pd
 
-from bnb_quant_v2.analysis.intra_5m import enrich_p1_f6
 from bnb_quant_v2.strategy.base import Strategy, strategy_registry
 from bnb_quant_v2.strategy.p1f6_rules import rule_registry
 
@@ -26,6 +25,8 @@ class P1F6Strategy(Strategy):
 
     def build_features(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame) -> pd.DataFrame:
         """构建 p1×f6 特征表。"""
+        from bnb_quant_v2.analysis.intra_5m import enrich_p1_f6
+
         return enrich_p1_f6(df_1h, df_5m)
 
     def evaluate(self, df: pd.DataFrame, rule_name: str) -> pd.Series:

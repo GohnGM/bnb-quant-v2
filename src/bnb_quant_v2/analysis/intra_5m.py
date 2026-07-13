@@ -24,10 +24,13 @@ import pandas as pd
 EXPECTED_M5_PER_HOUR = 12
 F6_BARS = 6  # 当前 1H 前 6 根 5m（信号在第 30 分钟）
 L6_BARS = 6  # 当前 1H 后 6 根 5m（预测目标区间 :30→:60）
-F6_CLOSE_STRENGTH_MIN = 0.67  # 前 30 分收盘在振幅上部
-F6_RET_STRONG = 0.002  # 前 30 分累计涨幅 >0.2%
-F6_RANGE_HL_MIN = 0.004  # 前 30 分振幅 >0.4%
 OHLC_RTOL = 1e-9
+
+from bnb_quant_v2.strategy.constants import (
+    F6_CLOSE_STRENGTH_MIN,
+    F6_RANGE_HL_MIN,
+    F6_RET_STRONG,
+)
 OHLC_ATOL = 1e-6
 
 # enrich_p1_f6：从第 t-1 行取值并加 p1_ 前缀的列（第 t-1 根 1H + 其 12 根 5m 特征）
