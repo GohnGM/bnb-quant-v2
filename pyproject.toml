@@ -10,6 +10,8 @@ dependencies = [
     "pyarrow>=15.0",
     "loguru>=0.7",
     "pyyaml>=6.0",
+    "typer>=0.9",
+    "rich>=13.0",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +28,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.scripts]
+bnbquant = "bnb_quant_v2.cli.main:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
