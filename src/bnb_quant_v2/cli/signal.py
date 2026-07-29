@@ -14,7 +14,9 @@ app = typer.Typer(name="signal", help="信号（评估、推送）")
 
 @app.command()
 def eval(
-    telegram: bool = typer.Option(False, help="发送 Telegram 通知"),
+    telegram: bool = typer.Option(False, "--telegram", "-t", help="发送 Telegram 通知"),
+    email: bool = typer.Option(False, "--email", "-e", help="发送 Email 通知"),
+    notify: bool = typer.Option(False, "--notify", "-n", help="发送所有通知渠道"),
     dry_run: bool = typer.Option(False, help="模拟推送"),
     mark_sent: bool = typer.Option(False, help="标记已发送"),
     hour_open: str = typer.Option(None, help="历史回放时间"),
@@ -58,19 +60,31 @@ def eval(
 
     console.print(table)
 
-    if telegram and result.any_triggered:
-        console.print("\n📢 [bold yellow]发送 Telegram 通知[/bold yellow]")
+    need_notify = telegram or email or notify
+    if need_notify and result.any_triggered:
+        console.print("\n📢 [bold yellow]发送通知[/bold yellow]")
 
         from bnb_quant_v2.runtime.pipeline import run_notify_step
+        from bnb_quant_v2.notify.config import load_telegram_config, load_email_config
 
         triggered_new = [s.to_dict() for s in result.signals if s.triggered]
+
+        tg_cfg = load_telegram_config() if (telegram or notify) else None
+        email_cfg = load_email_config() if (email or notify) else None
+
         notify_result = run_notify_step(
-            result, triggered_new, mark_sent=mark_sent
+            result, triggered_new,
+            tg_cfg=tg_cfg,
+            email_cfg=email_cfg,
+            mark_sent=mark_sent,
         )
         if notify_result.signals_sent > 0:
             console.print(f"✅ [bold green]通知发送成功 ({notify_result.signals_sent} 条)[/bold green]")
         else:
-            console.print(f"❌ [bold red]通知发送失败[/bold red]: {notify_result.errors}")
+            if notify_result.dry_run:
+                console.print("⚠️ [bold yellow]模拟模式，未真实发送[/bold yellow]")
+            else:
+                console.print(f"❌ [bold red]通知发送失败[/bold red]: {notify_result.errors}")
 
 
 @app.command()
