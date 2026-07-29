@@ -40,7 +40,7 @@ def _test_telegram(dry_run: bool = False):
         return
 
     client = TelegramClient(cfg)
-    msg = "🏗️ bnb-quant-v2 Telegram 测试消息"
+    msg = "🏗️ 紫御BTC量化分析系统 Telegram 测试消息"
     if dry_run:
         cfg.dry_run = True
         cfg.enabled = True
@@ -85,8 +85,8 @@ def _test_email(dry_run: bool = False):
 
     # 发送测试邮件
     result = client.send(
-        "🏗️ bnb-quant-v2 Email 测试",
-        "这是一封来自 bnb-quant-v2 的测试邮件。"
+        "🏗️ 紫御BTC量化分析系统 邮件测试",
+        "这是一封来自紫御BTC量化分析系统的测试邮件。"
     )
 
     if result.dry_run:
@@ -147,7 +147,7 @@ def heartbeat(
     if channel in ("email", "all"):
         email_cfg = load_email_config()
         email_client = EmailClient(email_cfg)
-        result = email_client.send("💓 bnb-quant-v2 日心跳", msg)
+        result = email_client.send("💓 紫御BTC量化分析系统 日心跳", msg)
         if result.dry_run:
             console.print("   ✅ Email 模拟心跳发送成功")
         elif result.ok:

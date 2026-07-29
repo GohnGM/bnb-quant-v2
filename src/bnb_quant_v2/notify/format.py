@@ -107,7 +107,7 @@ def format_alert_message(title: str, detail: str, *, as_of: pd.Timestamp | None 
     ts = _as_utc(as_of if as_of is not None else pd.Timestamp.utcnow())
     utc_s, bj_s = format_dual_time(ts)
     return (
-        f"⚠️ bnb-quant-v2 告警\n"
+        f"⚠️ 紫御BTC量化分析系统 告警\n"
         f"{title}\n"
         f"{detail}\n"
         f"UTC: {utc_s}\n"
@@ -140,7 +140,7 @@ def format_heartbeat_message(
         latest_block = f"5m {lu} UTC ({lb} 北京)"
 
     return (
-        f"💓 bnb-quant-v2 日心跳\n\n"
+        f"💓 紫御BTC量化分析系统 日心跳\n\n"
         f"统计区间: 过去 24h\n"
         f"  UTC: {start_utc} – {end_utc}\n"
         f"  北京: {start_bj} – {end_bj}\n"

@@ -29,7 +29,7 @@ class EmailConfig:
     username: str = ""
     password: str = ""
     from_addr: str = ""
-    from_name: str = "bnb-quant-v2"
+    from_name: str = "紫御BTC量化分析系统"
     to_addrs: list[str] = None  # type: ignore[assignment]
     send_on_signal: bool = True
     send_on_error: bool = True

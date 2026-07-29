@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""bnb-quant-v2 统一命令行界面。
+"""紫御BTC量化分析系统 - 统一命令行界面。
 
 使用方式：
     bnbquant --help
@@ -25,7 +25,7 @@ from bnb_quant_v2.paths import DATA_DIR, KLINE_DIR, ANALYSIS_DIR
 console = Console()
 app = typer.Typer(
     name="bnbquant",
-    help="BTC p1×f6 量化信号系统",
+    help="紫御BTC量化分析系统",
     rich_markup_mode="rich",
 )
 
@@ -39,7 +39,7 @@ app.add_typer(system_app, name="system", help="系统（健康检查、定时任
 @app.command()
 def status():
     """查看系统状态"""
-    console.print("\n📊 [bold cyan]bnb-quant-v2 系统状态[/bold cyan]\n")
+    console.print("\n📊 [bold cyan]紫御BTC量化分析系统 · 系统状态[/bold cyan]\n")
 
     # 数据状态
     table_data = Table(title="数据状态")
@@ -93,7 +93,7 @@ def status():
 @app.command()
 def version():
     """查看版本"""
-    console.print("📦 bnb-quant-v2 v0.1.0")
+    console.print("📦 紫御BTC量化分析系统 v0.1.0")
 
 
 @app.command()

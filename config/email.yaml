@@ -1,12 +1,13 @@
 enabled: true
-dry_run: true
+dry_run: false
 smtp_host: smtp.qq.com
 smtp_port: 465
 smtp_secure: true
 username: haoyongdi@qq.com
-from_name: bnb-quant-v2
-from_addr: ''
-to_addrs: []
+from_name: 紫御BTC量化分析系统
+from_addr: haoyongdi@qq.com
+to_addrs:
+- haoyongdi@qq.com
 send_on_signal: true
 send_on_error: true
 send_daily_heartbeat: true

@@ -1,4 +1,4 @@
-"""Web UI 主入口 - BTC p1×f6 量化信号系统。"""
+"""Web UI 主入口 - 紫御BTC量化分析系统。"""
 import sys
 from pathlib import Path
 
@@ -9,13 +9,13 @@ sys.path.insert(0, str(project_root / "src"))
 import streamlit as st
 
 st.set_page_config(
-    page_title="BTC p1×f6 量化信号系统",
+    page_title="紫御BTC量化分析系统",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("📈 BTC p1×f6 量化信号系统")
+st.title("📈 紫御BTC量化分析系统")
 st.markdown("---")
 
 st.info("👈 请从左侧导航选择功能模块")

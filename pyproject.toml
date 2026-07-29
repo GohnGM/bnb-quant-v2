@@ -1,7 +1,7 @@
 [project]
 name = "bnb-quant-v2"
 version = "0.1.0"
-description = "Clean quant workspace (Gate kline import fixed)"
+description = "紫御BTC量化分析系统 - BTC p1×f6 量化信号系统"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

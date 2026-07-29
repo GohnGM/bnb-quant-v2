@@ -110,6 +110,6 @@ def load_email_config(path: Path | str | None = None):
         username=str(username),
         password=str(password),
         from_addr=str(raw.get("from_addr", "")),
-        from_name=str(raw.get("from_name", "bnb-quant-v2")),
+        from_name=str(raw.get("from_name", "紫御BTC量化分析系统")),
         to_addrs=list(to_addrs),
     )

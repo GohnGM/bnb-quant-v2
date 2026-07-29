@@ -63,7 +63,7 @@ def save_env(env_dict: dict) -> tuple[bool, str]:
     """保存 dict 到 .env 文件。返回 (成功, 消息)。"""
     try:
         if not ENV_PATH.exists():
-            lines = ["# bnb-quant-v2 环境变量\n"]
+            lines = ["# 紫御BTC量化分析系统 环境变量\n"]
             for k, v in env_dict.items():
                 lines.append(f"{k}={v}\n")
             ENV_PATH.write_text("".join(lines), encoding="utf-8")
@@ -283,7 +283,7 @@ with tab_tg:
                 st.error("❌ Telegram 未配置完整（需 enabled + BOT_TOKEN + CHAT_ID）")
             else:
                 client = TelegramClient(cfg)
-                result = client.send("🏗️ bnb-quant-v2 Telegram 测试消息")
+                result = client.send("🏗️ 紫御BTC量化分析系统 Telegram 测试消息")
                 if result.ok and not result.dry_run:
                     st.success("✅ Telegram 测试成功")
                 elif result.dry_run:
@@ -319,7 +319,7 @@ with tab_email:
             key="em_username",
         )
     with col2:
-        em_from_name = st.text_input("发件人名称", value=email_cfg.get("from_name", "bnb-quant-v2"), key="em_from_name")
+        em_from_name = st.text_input("发件人名称", value=email_cfg.get("from_name", "紫御BTC量化分析系统"), key="em_from_name")
         em_from_addr = st.text_input(
             "发件地址 (留空则用 username)", value=email_cfg.get("from_addr", ""), key="em_from_addr"
         )
@@ -417,7 +417,7 @@ with tab_email:
                 if ok:
                     st.success(f"✅ {msg}")
                     # 自动发送测试邮件
-                    result = client.send("🏗️ bnb-quant-v2 邮件测试", "这是一封来自 bnb-quant-v2 的测试邮件。")
+                    result = client.send("🏗️ 紫御BTC量化分析系统 邮件测试", "这是一封来自紫御BTC量化分析系统的测试邮件。")
                     if result.ok and not result.dry_run:
                         st.success("✅ 测试邮件发送成功！请查收")
                     elif result.dry_run:
