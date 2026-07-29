@@ -38,11 +38,31 @@ with btn_col1:
                 from bnb_quant_v2.analysis.evaluator import evaluate_from_store
                 from bnb_quant_v2.runtime.pipeline import run_notify_step
                 from bnb_quant_v2.notify.config import load_telegram_config, load_email_config
+                import pandas as pd
 
-                result = evaluate_from_store()
+                # 找到数据中最后一个有完整 5m 数据的小时
+                store = KlineStore()
+                df_5m = store.load("BTCUSDT", "5m")
+                df_5m["open_time"] = pd.to_datetime(df_5m["open_time"])
+                # 取最后一个有足够 5m 数据的小时 (至少 6 根 5m = 30 分钟)
+                last_5m = df_5m["open_time"].max()
+                # 回退到该小时整点
+                target_hour = last_5m.replace(minute=0, second=0, microsecond=0)
+                # 确保这个小时有足够的 5m 数据
+                hour_start = target_hour
+                hour_end = target_hour + pd.Timedelta(hours=1)
+                hour_5m_count = len(df_5m[(df_5m["open_time"] >= hour_start) & (df_5m["open_time"] < hour_end)])
+
+                as_of = target_hour
+                if hour_5m_count < 6:
+                    # 往前找一个小时
+                    as_of = target_hour - pd.Timedelta(hours=1)
+
+                result = evaluate_from_store(as_of=as_of)
 
                 if not result.ready:
                     st.error(f"❌ 数据不足：{result.skip_reason}")
+                    st.info(f"💡 最新数据到: {last_5m}，尝试评估: {as_of}")
                 else:
                     triggered_new = [s.to_dict() for s in result.signals if s.triggered]
 

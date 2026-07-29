@@ -68,7 +68,9 @@ class EmailClient:
             return SendResult(ok=True, dry_run=True, message=body, error=reason)
 
         msg = MIMEMultipart()
-        msg["From"] = f"{cfg.from_name} <{cfg.from_addr or cfg.username}>"
+        # 简化 From 格式，使用纯邮箱地址避免 QQ 邮箱拒收
+        sender_addr = cfg.from_addr or cfg.username
+        msg["From"] = sender_addr
         msg["To"] = ", ".join(cfg.to_addrs)
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain", "utf-8"))
