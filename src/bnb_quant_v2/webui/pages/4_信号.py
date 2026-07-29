@@ -42,7 +42,7 @@ selected_rule = st.selectbox("选择规则", rule_names)
 rule = next((r for r in rules if r.metadata.name == selected_rule), None)
 
 if rule:
-    signal_col = rule(df)
+    signal_col = rule.evaluate_batch(df)
     signal_count = signal_col.sum()
     signal_df = df[signal_col == True].copy()
     
