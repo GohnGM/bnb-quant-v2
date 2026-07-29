@@ -1,29 +1,12 @@
-# 邮件通知配置
-# 真发：enabled: true + dry_run: false，并在 .env 填 EMAIL_PASSWORD
-# 
-# 常见 SMTP 配置：
-#   QQ邮箱: smtp.qq.com:465, 需要授权码作为密码
-#   Gmail: smtp.gmail.com:587, 需要应用密码
-#   Outlook: smtp.office365.com:587
-#   163邮箱: smtp.163.com:465, 需要授权码作为密码
-
-enabled: false
+enabled: true
 dry_run: true
-
-# SMTP 服务器
-smtp_host: "smtp.qq.com"
+smtp_host: smtp.qq.com
 smtp_port: 465
-smtp_secure: true  # 465端口用SSL, 587端口用false(STARTTLS)
-
-# 发件人信息
-username: ""  # 发件邮箱地址
-from_name: "bnb-quant-v2"
-
-# 收件人列表
-to_addrs:
-  - ""  # 收件邮箱地址
-
-# 发送选项
+smtp_secure: true
+username: haoyongdi@qq.com
+from_name: bnb-quant-v2
+from_addr: ''
+to_addrs: []
 send_on_signal: true
 send_on_error: true
 send_daily_heartbeat: true

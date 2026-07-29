@@ -8,6 +8,7 @@
 - 环境变量 (.env)
 
 所有修改直接写回文件，敏感凭证（密码/Token）以掩码显示。
+测试连接按钮使用当前表单值，无需先保存。
 """
 import sys
 from pathlib import Path
@@ -35,13 +36,17 @@ def load_yaml(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
-def save_yaml(path: Path, data: dict) -> None:
-    """保存 dict 到 YAML 文件。"""
-    path.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+def save_yaml(path: Path, data: dict) -> tuple[bool, str]:
+    """保存 dict 到 YAML 文件。返回 (成功, 消息)。"""
+    try:
+        path.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+        return True, f"已保存到 {path}"
+    except Exception as e:
+        return False, f"保存失败: {e}"
 
 
 def load_env() -> dict:
-    """解析 .env 文件为 dict（保留注释行结构）。"""
+    """解析 .env 文件为 dict。"""
     if not ENV_PATH.exists():
         return {}
     result = {}
@@ -54,39 +59,41 @@ def load_env() -> dict:
     return result
 
 
-def save_env(env_dict: dict) -> None:
-    """保存 dict 到 .env 文件（保留原注释，仅更新键值）。"""
-    if not ENV_PATH.exists():
-        # 新建文件
-        lines = ["# bnb-quant-v2 环境变量\n"]
-        for k, v in env_dict.items():
-            lines.append(f"{k}={v}\n")
-        ENV_PATH.write_text("".join(lines), encoding="utf-8")
-        return
+def save_env(env_dict: dict) -> tuple[bool, str]:
+    """保存 dict 到 .env 文件。返回 (成功, 消息)。"""
+    try:
+        if not ENV_PATH.exists():
+            lines = ["# bnb-quant-v2 环境变量\n"]
+            for k, v in env_dict.items():
+                lines.append(f"{k}={v}\n")
+            ENV_PATH.write_text("".join(lines), encoding="utf-8")
+            return True, f"已创建 {ENV_PATH}"
 
-    original = ENV_PATH.read_text(encoding="utf-8").splitlines()
-    new_lines = []
-    written_keys = set()
+        original = ENV_PATH.read_text(encoding="utf-8").splitlines()
+        new_lines = []
+        written_keys = set()
 
-    for line in original:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            new_lines.append(line)
-            continue
-        key, _, _ = stripped.partition("=")
-        key = key.strip()
-        if key in env_dict:
-            new_lines.append(f"{key}={env_dict[key]}")
-            written_keys.add(key)
-        else:
-            new_lines.append(line)
+        for line in original:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                new_lines.append(line)
+                continue
+            key, _, _ = stripped.partition("=")
+            key = key.strip()
+            if key in env_dict:
+                new_lines.append(f"{key}={env_dict[key]}")
+                written_keys.add(key)
+            else:
+                new_lines.append(line)
 
-    # 追加新增的键
-    for key, val in env_dict.items():
-        if key not in written_keys:
-            new_lines.append(f"{key}={val}")
+        for key, val in env_dict.items():
+            if key not in written_keys:
+                new_lines.append(f"{key}={val}")
 
-    ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+        return True, f"已保存到 {ENV_PATH}"
+    except Exception as e:
+        return False, f"保存失败: {e}"
 
 
 def mask_value(val: str, visible: int = 4) -> str:
@@ -96,6 +103,13 @@ def mask_value(val: str, visible: int = 4) -> str:
     if len(val) <= visible:
         return "*" * len(val)
     return "*" * (len(val) - visible) + val[-visible:]
+
+
+def notify_save_success(msg: str, need_restart: bool = True):
+    """统一的保存成功反馈。"""
+    st.success(f"✅ {msg}")
+    if need_restart:
+        st.warning("💡 部分修改需要重启服务才能生效（CLI/WebUI 刷新即可，后台任务需重启）")
 
 
 # ========== Tab 布局 ==========
@@ -119,9 +133,11 @@ with tab_basic:
         kline_dir = st.text_input("K线存储目录", value=settings.get("kline_dir", "data/klines"), key="set_kline_dir")
 
     if st.button("💾 保存基础设置", type="primary", key="save_basic"):
-        save_yaml(settings_path, {"symbol": symbol, "kline_dir": kline_dir})
-        st.success("✅ 已保存到 config/settings.yaml")
-        st.info("💡 部分修改可能需要重启服务生效")
+        ok, msg = save_yaml(settings_path, {"symbol": symbol, "kline_dir": kline_dir})
+        if ok:
+            notify_save_success(msg)
+        else:
+            st.error(msg)
 
     st.markdown("---")
     st.markdown("**当前文件内容**")
@@ -171,8 +187,11 @@ with tab_sync:
             "lookback_bars": {"5m": lb_5m, "1h": lb_1h},
             "store_dir": sync_store_dir,
         }
-        save_yaml(sync_path, sync_data)
-        st.success("✅ 已保存到 config/live_sync.yaml")
+        ok, msg = save_yaml(sync_path, sync_data)
+        if ok:
+            notify_save_success(msg)
+        else:
+            st.error(msg)
 
     st.markdown("---")
     st.markdown("**当前文件内容**")
@@ -232,29 +251,43 @@ with tab_tg:
                 "send_daily_heartbeat": tg_send_heartbeat,
                 "heartbeat_cron_utc": tg_heartbeat_cron,
             }
-            save_yaml(tg_path, tg_data)
-            new_env = load_env()
-            if tg_token:
-                new_env["TELEGRAM_BOT_TOKEN"] = tg_token
-            if tg_chat_id:
-                new_env["TELEGRAM_CHAT_ID"] = tg_chat_id
-            save_env(new_env)
-            st.success("✅ 已保存 Telegram 配置和凭证")
+            ok, msg = save_yaml(tg_path, tg_data)
+            if not ok:
+                st.error(msg)
+            else:
+                new_env = load_env()
+                if tg_token:
+                    new_env["TELEGRAM_BOT_TOKEN"] = tg_token
+                if tg_chat_id:
+                    new_env["TELEGRAM_CHAT_ID"] = tg_chat_id
+                ok2, msg2 = save_env(new_env)
+                if ok2:
+                    notify_save_success("Telegram 配置和凭证已保存")
+                else:
+                    st.error(msg2)
     with col_btn2:
         if st.button("🧪 测试连接", key="test_tg"):
-            from bnb_quant_v2.notify.config import load_telegram_config
-            from bnb_quant_v2.notify.telegram import TelegramClient
+            from bnb_quant_v2.notify.telegram import SendResult, TelegramConfig, TelegramClient
 
-            cfg = load_telegram_config()
+            cfg = TelegramConfig(
+                enabled=tg_enabled,
+                dry_run=tg_dry_run,
+                parse_mode=tg_parse_mode,
+                send_on_signal=tg_send_signal,
+                send_on_error=tg_send_error,
+                send_daily_heartbeat=tg_send_heartbeat,
+                bot_token=tg_token,
+                chat_id=tg_chat_id,
+            )
             if not cfg.can_send:
-                st.error("❌ Telegram 未配置完整（需 enabled + token + chat_id）")
+                st.error("❌ Telegram 未配置完整（需 enabled + BOT_TOKEN + CHAT_ID）")
             else:
                 client = TelegramClient(cfg)
                 result = client.send("🏗️ bnb-quant-v2 Telegram 测试消息")
                 if result.ok and not result.dry_run:
                     st.success("✅ Telegram 测试成功")
                 elif result.dry_run:
-                    st.warning("⚠️ 模拟模式，未真实发送")
+                    st.warning("⚠️ 模拟模式，未真实发送。关闭 dry_run 后可真实发送。")
                 else:
                     st.error(f"❌ 失败: {result.error}")
 
@@ -297,7 +330,7 @@ with tab_email:
             key="em_to_addrs",
         )
         em_password = st.text_input(
-            "SMTP 密码/授权码 (.env EMAIL_PASSWORD)",
+            "SMTP 密码/授权码",
             value=env.get("EMAIL_PASSWORD", ""),
             type="password",
             placeholder="未配置",
@@ -328,30 +361,69 @@ with tab_email:
                 "send_on_error": em_send_error,
                 "send_daily_heartbeat": em_send_heartbeat,
             }
-            save_yaml(email_path, email_data)
-            new_env = load_env()
-            if em_username:
-                new_env["EMAIL_USERNAME"] = em_username
-            if em_password:
-                new_env["EMAIL_PASSWORD"] = em_password
-            if em_host:
-                new_env["EMAIL_SMTP_HOST"] = em_host
-            new_env["EMAIL_SMTP_PORT"] = str(int(em_port))
-            save_env(new_env)
-            st.success("✅ 已保存邮件配置和凭证")
+            ok, msg = save_yaml(email_path, email_data)
+            if not ok:
+                st.error(msg)
+            else:
+                new_env = load_env()
+                if em_username:
+                    new_env["EMAIL_USERNAME"] = em_username
+                if em_password:
+                    new_env["EMAIL_PASSWORD"] = em_password
+                if em_host:
+                    new_env["EMAIL_SMTP_HOST"] = em_host
+                new_env["EMAIL_SMTP_PORT"] = str(int(em_port))
+                ok2, msg2 = save_env(new_env)
+                if ok2:
+                    notify_save_success("邮件配置和凭证已保存")
+                else:
+                    st.error(msg2)
     with col_btn2:
         if st.button("🧪 测试连接", key="test_email"):
-            from bnb_quant_v2.notify.config import load_email_config
-            from bnb_quant_v2.notify.email import EmailClient
+            from bnb_quant_v2.notify.email import EmailClient, EmailConfig
 
-            cfg = load_email_config()
+            to_list = [a.strip() for a in to_addrs_str.split(",") if a.strip()]
+            cfg = EmailConfig(
+                enabled=em_enabled,
+                dry_run=em_dry_run,
+                smtp_host=em_host,
+                smtp_port=int(em_port),
+                smtp_secure=em_secure,
+                username=em_username,
+                password=em_password,
+                from_addr=em_from_addr,
+                from_name=em_from_name,
+                to_addrs=to_list,
+                send_on_signal=em_send_signal,
+                send_on_error=em_send_error,
+                send_daily_heartbeat=em_send_heartbeat,
+            )
             if not cfg.can_send:
-                st.error("❌ 邮件未配置完整（需 enabled + host + username + password + 收件人）")
+                missing = []
+                if not em_enabled:
+                    missing.append("启用")
+                if not em_host:
+                    missing.append("SMTP 服务器")
+                if not em_username:
+                    missing.append("用户名")
+                if not em_password:
+                    missing.append("密码/授权码")
+                if not to_list:
+                    missing.append("收件人")
+                st.error(f"❌ 邮件未配置完整，缺少: {', '.join(missing)}")
             else:
                 client = EmailClient(cfg)
                 ok, msg = client.test_connection()
                 if ok:
                     st.success(f"✅ {msg}")
+                    # 自动发送测试邮件
+                    result = client.send("🏗️ bnb-quant-v2 邮件测试", "这是一封来自 bnb-quant-v2 的测试邮件。")
+                    if result.ok and not result.dry_run:
+                        st.success("✅ 测试邮件发送成功！请查收")
+                    elif result.dry_run:
+                        st.warning("⚠️ 模拟模式，未真实发送邮件。关闭 dry_run 后可真实发送。")
+                    else:
+                        st.error(f"❌ 邮件发送失败: {result.error}")
                 else:
                     st.error(f"❌ {msg}")
 
@@ -369,7 +441,6 @@ with tab_env:
 
     st.markdown("**已知环境变量**（修改后点击保存写回 `.env`）")
 
-    # 标准环境变量列表
     known_keys = [
         ("GATE_API_KEY", "Gate API Key (实时同步)"),
         ("GATE_API_SECRET", "Gate API Secret"),
@@ -403,7 +474,6 @@ with tab_env:
             if val:
                 new_env[key] = val
 
-    # 显示其他未归类的环境变量
     other_keys = [k for k in env.keys() if k not in {k for k, _ in known_keys}]
     if other_keys:
         st.markdown("**其他环境变量**")
@@ -419,11 +489,13 @@ with tab_env:
                 new_env[key] = val
 
     if st.button("💾 保存环境变量", type="primary", key="save_env"):
-        # 合并：保留未在表单中显示但已存在的值
         merged = dict(env)
         merged.update(new_env)
-        save_env(merged)
-        st.success(f"✅ 已保存到 {ENV_PATH}")
+        ok, msg = save_env(merged)
+        if ok:
+            notify_save_success(msg)
+        else:
+            st.error(msg)
 
     st.markdown("---")
     st.markdown("**当前 .env 内容**（敏感值已掩码）")
