@@ -96,5 +96,46 @@ def version():
     console.print("📦 bnb-quant-v2 v0.1.0")
 
 
+@app.command()
+def web(
+    port: int = typer.Option(8501, help="Web UI 端口"),
+    host: str = typer.Option("localhost", help="Web UI 主机地址"),
+    headless: bool = typer.Option(False, "--headless", "-h", help="无头模式运行"),
+):
+    """启动 Web UI 界面"""
+    import subprocess
+    import sys
+    
+    from bnb_quant_v2.paths import PROJECT_ROOT
+    
+    app_path = PROJECT_ROOT / "src" / "bnb_quant_v2" / "webui" / "app.py"
+    
+    if not app_path.exists():
+        console.print("❌ [bold red]Web UI 文件不存在[/bold red]")
+        return
+    
+    console.print(f"\n🌐 [bold cyan]启动 Web UI...[/bold cyan]")
+    console.print(f"   地址: http://{host}:{port}")
+    console.print(f"   文件: {app_path}")
+    console.print(f"\n💡 在浏览器中打开上述地址访问\n")
+    
+    cmd = [
+        sys.executable, "-m", "streamlit", "run",
+        str(app_path),
+        "--server.port", str(port),
+        "--server.address", host,
+    ]
+    
+    if headless:
+        cmd.extend(["--server.headless", "true"])
+    
+    try:
+        subprocess.run(cmd, check=True)
+    except KeyboardInterrupt:
+        console.print("\n🛑 [bold yellow]Web UI 已停止[/bold yellow]")
+    except Exception as e:
+        console.print(f"❌ [bold red]启动失败: {e}[/bold red]")
+
+
 if __name__ == "__main__":
     app()

@@ -37,11 +37,9 @@ def build(
         return
 
     console.print("   加载 K 线数据...")
-    klines_1h = KlineStore("BTCUSDT", "1h")
-    klines_5m = KlineStore("BTCUSDT", "5m")
-
-    df_1h = klines_1h.load()
-    df_5m = klines_5m.load()
+    store = KlineStore()
+    df_1h = store.load("BTCUSDT", "1h")
+    df_5m = store.load("BTCUSDT", "5m")
 
     if df_1h.empty:
         console.print("❌ [bold red]1H 数据为空[/bold red]")
@@ -126,7 +124,7 @@ def run(
 
     else:
         console.print("\n   回测主规则...")
-        run_primary_hour_backtest()
+        run_primary_hour_backtest(df)
 
 
 @app.command()
