@@ -7,7 +7,7 @@ username: haoyongdi@qq.com
 from_name: 紫御BTC量化分析系统
 from_addr: haoyongdi@qq.com
 to_addrs:
-- haoyongdi@qq.com
+- gongmin.gohn.gm@gmail.com
 send_on_signal: true
 send_on_error: true
 send_daily_heartbeat: true
