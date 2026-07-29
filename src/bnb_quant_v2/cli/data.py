@@ -89,28 +89,26 @@ def validate(
     """验证数据质量"""
     console.print(f"\n🔍 [bold cyan]验证 {symbol} 数据质量[/bold cyan]")
 
-    klines_1h = KlineStore(symbol, "1h")
-    klines_5m = KlineStore(symbol, "5m")
-
-    df_1h = klines_1h.load()
-    df_5m = klines_5m.load()
+    store = KlineStore()
+    df_1h = store.load(symbol, "1h")
+    df_5m = store.load(symbol, "5m")
 
     console.print(f"\n📊 1H 数据: {len(df_1h)} 条")
     console.print(f"📊 5m 数据: {len(df_5m)} 条")
 
     if not df_1h.empty:
-        result_1h = audit_klines(df_1h, "1h")
+        result_1h = audit_klines(df_1h, bar_hours=1.0)
         console.print(f"\n1H 审计:")
         console.print(f"   时间范围: {df_1h['open_time'].min()} → {df_1h['open_time'].max()}")
-        console.print(f"   完整性: {result_1h.completeness_pct:.1f}%")
-        console.print(f"   异常: {result_1h.anomalies} 条")
+        console.print(f"   完整性: {result_1h.open_eq_prev_close_pct:.1f}%")
+        console.print(f"   异常: {result_1h.ohlc_violations} 条")
 
     if not df_5m.empty:
-        result_5m = audit_klines(df_5m, "5m")
+        result_5m = audit_klines(df_5m, bar_minutes=5.0)
         console.print(f"\n5m 审计:")
         console.print(f"   时间范围: {df_5m['open_time'].min()} → {df_5m['open_time'].max()}")
-        console.print(f"   完整性: {result_5m.completeness_pct:.1f}%")
-        console.print(f"   异常: {result_5m.anomalies} 条")
+        console.print(f"   完整性: {result_5m.open_eq_prev_close_pct:.1f}%")
+        console.print(f"   异常: {result_5m.ohlc_violations} 条")
 
 
 @app.command(name="list")

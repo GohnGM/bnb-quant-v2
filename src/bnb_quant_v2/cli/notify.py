@@ -29,10 +29,10 @@ def test(
     client = TelegramClient(cfg)
     result = client.send("🏗️ bnb-quant-v2 Telegram 测试消息")
 
-    if result.ok:
-        console.print("✅ [bold green]Telegram 测试成功[/bold green]")
-    elif result.dry_run:
+    if result.dry_run:
         console.print("✅ [bold yellow]模拟发送成功（dry_run 模式）[/bold yellow]")
+    elif result.ok:
+        console.print("✅ [bold green]Telegram 测试成功[/bold green]")
     else:
         console.print(f"❌ [bold red]Telegram 测试失败[/bold red]: {result.error}")
 
@@ -54,10 +54,10 @@ def heartbeat(
     msg = format_heartbeat_message()
     result = client.send(msg)
 
-    if result.ok:
-        console.print("✅ [bold green]心跳发送成功[/bold green]")
-    elif result.dry_run:
+    if result.dry_run:
         console.print("✅ [bold yellow]模拟心跳发送成功[/bold yellow]")
+    elif result.ok:
+        console.print("✅ [bold green]心跳发送成功[/bold green]")
     else:
         console.print(f"❌ [bold red]心跳发送失败[/bold red]: {result.error}")
 
@@ -76,7 +76,6 @@ def config():
     console.print(f"   发送信号: {'✅ 是' if cfg.send_on_signal else '❌ 否'}")
     console.print(f"   发送错误: {'✅ 是' if cfg.send_on_error else '❌ 否'}")
     console.print(f"   发送心跳: {'✅ 是' if cfg.send_daily_heartbeat else '❌ 否'}")
-    console.print(f"   心跳时间: {cfg.heartbeat_cron_utc} (UTC)")
     console.print(f"   Bot Token: {'✅ 已配置' if cfg.bot_token else '❌ 未配置'}")
     console.print(f"   Chat ID: {'✅ 已配置' if cfg.chat_id else '❌ 未配置'}")
 

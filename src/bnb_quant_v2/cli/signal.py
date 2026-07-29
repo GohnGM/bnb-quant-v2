@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from rich.console import Console
 from rich.table import Table
 
-from bnb_quant_v2.analysis.evaluator import evaluate_from_store, evaluate_live_at
+from bnb_quant_v2.analysis.evaluator import evaluate_from_store
 
 console = Console()
 app = typer.Typer(name="signal", help="信号（评估、推送）")
@@ -23,7 +23,6 @@ def eval(
     console.print("\n🎯 [bold cyan]评估 p1×f6 信号[/bold cyan]")
 
     if hour_open:
-        # 历史回放模式
         ts = datetime.fromisoformat(hour_open.replace("Z", "+00:00"))
         if ts.tzinfo is None:
             ts = ts.replace(tzinfo=timezone.utc)
@@ -31,21 +30,19 @@ def eval(
             ts = ts.astimezone(timezone.utc)
 
         console.print(f"   历史回放: {ts}")
-        result = evaluate_live_at(ts)
+        result = evaluate_from_store(as_of=ts)
     else:
-        # 实时评估模式
         console.print("   实时评估...")
         result = evaluate_from_store()
 
     if not result.ready:
         console.print("❌ [bold red]数据不足，无法评估[/bold red]")
-        console.print(f"   原因: {result.message}")
+        console.print(f"   原因: {result.skip_reason}")
         return
 
-    console.print(f"\n📊 评估时间: {result.signal_at}")
+    console.print(f"\n📊 评估时间: {result.as_of}")
     console.print(f"   小时: {result.hour_open_time}")
 
-    # 显示信号结果
     table = Table(title="信号评估结果")
     table.add_column("规则", style="cyan")
     table.add_column("预测", style="magenta")
@@ -61,28 +58,19 @@ def eval(
 
     console.print(table)
 
-    # 显示特征详情
-    if result.live_row is not None:
-        row = result.live_row
-        console.print("\n🔍 特征详情:")
-        console.print(f"   p1 蜡烛类型: {row.get('p1_candle_type', '')}")
-        console.print(f"   p1 阳线: {row.get('p1_yang', False)}")
-        console.print(f"   p1 阴线: {row.get('p1_yin', False)}")
-        console.print(f"   f6 阳线数: {row.get('f6_yang_cnt', 0)}/6")
-        console.print(f"   f6 收盘强度: {row.get('f6_close_strength', 0):.2f}")
-        console.print(f"   f6 累计涨幅: {row.get('f6_ret_sum', 0):.2%}")
-
-    # 发送通知
-    if telegram:
+    if telegram and result.any_triggered:
         console.print("\n📢 [bold yellow]发送 Telegram 通知[/bold yellow]")
 
         from bnb_quant_v2.runtime.pipeline import run_notify_step
 
-        notify_result = run_notify_step(result, dry_run=dry_run, mark_sent=mark_sent)
-        if notify_result.ok:
-            console.print("✅ [bold green]通知发送成功[/bold green]")
+        triggered_new = [s.to_dict() for s in result.signals if s.triggered]
+        notify_result = run_notify_step(
+            result, triggered_new, mark_sent=mark_sent
+        )
+        if notify_result.signals_sent > 0:
+            console.print(f"✅ [bold green]通知发送成功 ({notify_result.signals_sent} 条)[/bold green]")
         else:
-            console.print(f"❌ [bold red]通知发送失败[/bold red]: {notify_result.error}")
+            console.print(f"❌ [bold red]通知发送失败[/bold red]: {notify_result.errors}")
 
 
 @app.command()
@@ -106,7 +94,6 @@ def history(
     df = pd.read_csv(signals_file)
     df["open_time"] = pd.to_datetime(df["open_time"])
 
-    # 取最近 hours 小时
     recent = df.sort_values("open_time").tail(hours)
 
     table = Table(title="最近信号")
