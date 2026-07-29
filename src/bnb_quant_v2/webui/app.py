@@ -21,7 +21,7 @@ st.markdown("---")
 st.info("👈 请从左侧导航选择功能模块")
 
 # 快速入口
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 with col1:
     st.markdown("#### 📊 概览\n系统状态、快速统计")
 with col2:
@@ -32,3 +32,5 @@ with col4:
     st.markdown("#### 📡 信号\n信号历史")
 with col5:
     st.markdown("#### ⚙️ 系统\n系统监控")
+with col6:
+    st.markdown("#### 🔧 配置\n参数配置管理")
