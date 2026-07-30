@@ -13,3 +13,5 @@ data/analysis/*
 data/live/*.json
 *.log
 !logs/.gitkeep
+.pids/
+logs/
