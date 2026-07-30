@@ -65,7 +65,7 @@ if rule:
         if st.button("🚀 快速回测此规则"):
             with st.spinner("运行回测..."):
                 df = pd.read_parquet(ANALYSIS_DIR / "BTCUSDT_1h_p1_f6_features.parquet")
-                result = run_p1_f6_backtest(df, selected_rule)
+                result = run_p1_f6_backtest(df, rule_name=selected_rule)
                 
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
@@ -75,7 +75,7 @@ if rule:
                 with col3:
                     st.metric("覆盖度", f"{result.coverage_pct:.2f}%")
                 with col4:
-                    st.metric("基准", f"{result.baseline:.2%}")
+                    st.metric("基准对比", f"{result.accuracy - result.baseline_up_rate:+.2%}")
         
         st.info("💡 提示: 在回测页面可以查看更详细的图表分析")
     else:
